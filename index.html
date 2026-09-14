@@ -72,16 +72,6 @@
     padding: 24px 16px 60px;
   }
 
-  h1 {
-    font-size: clamp(1.6rem, 5vw, 2.6rem);
-    letter-spacing: 4px;
-    margin: 0 0 6px;
-    text-align: center;
-    color: #fff;
-  }
-  h1 span.b { color: var(--neon-blue); text-shadow: 0 0 8px var(--neon-blue), 0 0 24px var(--neon-blue); }
-  h1 span.g { color: var(--neon-green); text-shadow: 0 0 8px var(--neon-green), 0 0 24px var(--neon-green); }
-
   .subtitle {
     color: #8f8fb8;
     font-size: 0.85rem;
@@ -219,19 +209,52 @@
     overflow: hidden;
   }
 
+  .nova-wash {
+    position: absolute;
+    inset: -25%;
+    background: radial-gradient(circle, var(--nova-color) 0%, transparent 55%);
+    opacity: 0;
+    mix-blend-mode: screen;
+    animation: nova-wash 2s ease-out forwards;
+  }
+  @keyframes nova-wash {
+    0% { opacity: 0; }
+    8% { opacity: 0.45; }
+    100% { opacity: 0; }
+  }
+
   .nova-flash {
     position: absolute;
     width: 20px;
     height: 20px;
     border-radius: 50%;
     background: #fff;
-    box-shadow: 0 0 40px 20px #fff;
-    animation: nova-flash 0.5s ease-out forwards;
+    box-shadow: 0 0 60px 30px #fff, 0 0 120px 60px var(--nova-color);
+    animation: nova-flash 0.55s ease-out forwards;
   }
   @keyframes nova-flash {
     0% { transform: scale(0); opacity: 1; }
-    40% { transform: scale(3); opacity: 1; }
-    100% { transform: scale(6); opacity: 0; }
+    35% { transform: scale(4); opacity: 1; }
+    100% { transform: scale(8); opacity: 0; }
+  }
+
+  .nova-shock {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 3px solid var(--nova-color);
+    box-shadow: 0 0 24px var(--nova-color), inset 0 0 24px var(--nova-color);
+    opacity: 0;
+    animation: nova-shock 1.6s cubic-bezier(.15,.8,.3,1) forwards;
+  }
+  .nova-shock.delay {
+    animation-delay: 0.28s;
+    border-width: 2px;
+  }
+  @keyframes nova-shock {
+    0% { transform: scale(0); opacity: 0.95; }
+    100% { transform: scale(55); opacity: 0; }
   }
 
   .nova-ring {
@@ -241,12 +264,12 @@
     border-radius: 50%;
     background: radial-gradient(circle, var(--nova-color) 0%, transparent 70%);
     animation: nova-ring 1.4s ease-out forwards;
-    animation-delay: 0.15s;
+    animation-delay: 0.1s;
     opacity: 0;
   }
   @keyframes nova-ring {
     0% { transform: scale(0); opacity: 0.9; }
-    100% { transform: scale(40); opacity: 0; }
+    100% { transform: scale(38); opacity: 0; }
   }
 
   .nova-particle {
@@ -258,11 +281,20 @@
     border-radius: 50%;
     background: var(--nova-color);
     box-shadow: 0 0 8px 2px var(--nova-color);
-    animation: nova-particle 1.1s ease-out forwards;
+    animation: nova-particle 1.2s cubic-bezier(.1,.7,.3,1) forwards;
+  }
+  .nova-particle.ember {
+    width: 2px;
+    height: 2px;
+    background: #fff;
+    box-shadow: 0 0 6px 2px var(--nova-color);
+    animation-duration: 1.6s;
+    animation-timing-function: ease-out;
   }
   @keyframes nova-particle {
-    0% { transform: translate(-50%, -50%) rotate(var(--angle)) translateX(0); opacity: 1; }
-    100% { transform: translate(-50%, -50%) rotate(var(--angle)) translateX(var(--dist)); opacity: 0; }
+    0% { transform: translate(-50%, -50%) rotate(var(--angle)) translateX(0) scale(1); opacity: 1; }
+    75% { opacity: 1; }
+    100% { transform: translate(-50%, -50%) rotate(var(--angle)) translateX(var(--dist)) scale(0.3); opacity: 0; }
   }
 
   .nova-text {
@@ -271,16 +303,30 @@
     font-weight: 900;
     letter-spacing: 6px;
     color: var(--nova-color);
-    text-shadow: 0 0 10px var(--nova-color), 0 0 30px var(--nova-color), 0 0 70px var(--nova-color);
+    text-shadow: 0 0 10px var(--nova-color), 0 0 30px var(--nova-color), 0 0 70px var(--nova-color), 0 0 120px var(--nova-color);
     opacity: 0;
-    transform: scale(0.3);
-    animation: nova-text 0.9s cubic-bezier(.2,1.4,.4,1) forwards;
+    transform: scale(2.2);
+    filter: blur(6px);
+    animation: nova-text 1s cubic-bezier(.15,1.6,.3,1) forwards;
     animation-delay: 0.3s;
   }
   @keyframes nova-text {
-    0% { opacity: 0; transform: scale(0.3); }
-    60% { opacity: 1; transform: scale(1.15); }
+    0% { opacity: 0; transform: scale(2.2); filter: blur(10px); }
+    12% { opacity: 1; transform: scale(0.9); filter: blur(0); }
+    18% { opacity: 0.3; }
+    24% { opacity: 1; }
+    60% { opacity: 1; transform: scale(1.12); }
     100% { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes screen-shake {
+    0%, 100% { transform: translate(0, 0); }
+    20% { transform: translate(-6px, 4px); }
+    40% { transform: translate(5px, -5px); }
+    60% { transform: translate(-4px, -3px); }
+    80% { transform: translate(6px, 3px); }
+  }
+  .wrap.shaking { animation: screen-shake 0.5s ease-out; }
   }
 </style>
 </head>
@@ -289,13 +335,6 @@
 <div id="starfield"></div>
 
 <div class="wrap">
-  <h1><span class="b">NEON</span> TIC-TAC-<span class="g">TOE</span></h1>
-  <p class="subtitle">
-    Classic rules, deep space twist: each player can only hold <b>3 marks</b> on the board.
-    Place a <b class="b">4th X</b> or <b class="g">4th O</b> and your oldest mark vanishes first.
-    The mark about to vanish pulses <span style="color:#ff2fd0;">pink</span> as a warning.
-  </p>
-
   <div id="status" class="turn-x">X's turn</div>
 
   <div id="board"></div>
@@ -452,23 +491,47 @@
     overlay.id = 'supernova-overlay';
     overlay.style.setProperty('--nova-color', color);
 
+    const wash = document.createElement('div');
+    wash.className = 'nova-wash';
+    overlay.appendChild(wash);
+
     const flash = document.createElement('div');
     flash.className = 'nova-flash';
     overlay.appendChild(flash);
+
+    const shock1 = document.createElement('div');
+    shock1.className = 'nova-shock';
+    overlay.appendChild(shock1);
+
+    const shock2 = document.createElement('div');
+    shock2.className = 'nova-shock delay';
+    overlay.appendChild(shock2);
 
     const ring = document.createElement('div');
     ring.className = 'nova-ring';
     overlay.appendChild(ring);
 
-    const particleCount = 28;
-    for (let i = 0; i < particleCount; i++) {
+    const dotCount = 26;
+    for (let i = 0; i < dotCount; i++) {
       const p = document.createElement('div');
       p.className = 'nova-particle';
-      const angle = (360 / particleCount) * i + (Math.random() * 10 - 5);
-      const dist = 180 + Math.random() * 220;
+      const angle = (360 / dotCount) * i + (Math.random() * 8 - 4);
+      const dist = 160 + Math.random() * 200;
       p.style.setProperty('--angle', angle + 'deg');
       p.style.setProperty('--dist', dist + 'px');
-      p.style.animationDelay = (Math.random() * 0.15) + 's';
+      p.style.animationDelay = (Math.random() * 0.12) + 's';
+      overlay.appendChild(p);
+    }
+
+    const emberCount = 22;
+    for (let i = 0; i < emberCount; i++) {
+      const p = document.createElement('div');
+      p.className = 'nova-particle ember';
+      const angle = Math.random() * 360;
+      const dist = 220 + Math.random() * 260;
+      p.style.setProperty('--angle', angle + 'deg');
+      p.style.setProperty('--dist', dist + 'px');
+      p.style.animationDelay = (Math.random() * 0.25) + 's';
       overlay.appendChild(p);
     }
 
@@ -478,7 +541,13 @@
     overlay.appendChild(text);
 
     document.body.appendChild(overlay);
-    overlay._cleanup = setTimeout(() => overlay.remove(), 2200);
+
+    const wrapEl = document.querySelector('.wrap');
+    wrapEl.classList.remove('shaking');
+    void wrapEl.offsetWidth;
+    wrapEl.classList.add('shaking');
+
+    overlay._cleanup = setTimeout(() => overlay.remove(), 2600);
   }
 
   function clearSupernova() {
