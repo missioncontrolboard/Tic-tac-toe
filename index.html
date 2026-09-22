@@ -598,13 +598,19 @@
 
   function aiMove() {
     if (gameOver || current !== AI_PLAYER) return;
-    const state = { board: board.slice(), queues: { X: queues.X.slice(), O: queues.O.slice() } };
-    const result = minimax(state, AI_PLAYER, AI_SEARCH_DEPTH, -Infinity, Infinity);
-    let choice = result.move;
+    let choice = null;
+    try {
+      const state = { board: board.slice(), queues: { X: queues.X.slice(), O: queues.O.slice() } };
+      const result = minimax(state, AI_PLAYER, AI_SEARCH_DEPTH, -Infinity, Infinity);
+      choice = result.move;
+    } catch (err) {
+      console.error('AI search failed, falling back to a random legal move:', err);
+    }
     if (choice === undefined || choice === null || board[choice] !== null) {
       const opts = emptyCellsOf(board);
       choice = opts[Math.floor(Math.random() * opts.length)];
     }
+    if (choice === undefined || choice === null) return; // no legal moves; nothing to do
     makeMove(choice);
   }
 
