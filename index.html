@@ -436,6 +436,8 @@
   const resetBtn = document.getElementById('reset');
   const scoreXEl = document.getElementById('scoreX');
   const scoreOEl = document.getElementById('scoreO');
+  const mode2pBtn = document.getElementById('mode-2p');
+  const modeAiBtn = document.getElementById('mode-ai');
 
   const WIN_LINES = [
     [0,1,2],[3,4,5],[6,7,8],
@@ -448,6 +450,9 @@
   let current = 'X';
   let gameOver = false;
   let scores = { X: 0, O: 0 };
+  let mode = '2p'; // '2p' or 'ai'
+  const AI_PLAYER = 'O';
+  let aiTimer = null;
 
   const cells = [];
   for (let i = 0; i < 9; i++) {
@@ -461,12 +466,15 @@
 
   function handleClick(index) {
     if (gameOver || board[index] !== null) return;
+    if (mode === 'ai' && current === AI_PLAYER) return; // ignore clicks during AI's turn
+    makeMove(index);
+  }
 
+  function makeMove(index) {
     const queue = queues[current];
-    let vanished = null;
 
     if (queue.length === 3) {
-      vanished = queue.shift();
+      const vanished = queue.shift();
       board[vanished] = null;
     }
 
@@ -489,6 +497,11 @@
 
     current = current === 'X' ? 'O' : 'X';
     updateStatus();
+
+    if (!gameOver && mode === 'ai' && current === AI_PLAYER) {
+      statusEl.textContent = 'AI is thinking...';
+      aiTimer = setTimeout(aiMove, 550);
+    }
   }
 
   function checkWin(player) {
@@ -496,6 +509,103 @@
       if (line.every(i => board[i] === player)) return line;
     }
     return null;
+  }
+
+  const AI_SEARCH_DEPTH = 6;
+
+  function cloneState(state) {
+    return {
+      board: state.board.slice(),
+      queues: { X: state.queues.X.slice(), O: state.queues.O.slice() }
+    };
+  }
+
+  // Applies a move to a (cloned) state, handling the vanish rule, and
+  // returns the resulting state without touching the live game state.
+  function applyMoveToState(state, player, index) {
+    const next = cloneState(state);
+    const queue = next.queues[player];
+    if (queue.length === 3) {
+      const oldest = queue.shift();
+      next.board[oldest] = null;
+    }
+    next.board[index] = player;
+    queue.push(index);
+    return next;
+  }
+
+  function getWinnerOf(boardArr) {
+    for (const line of WIN_LINES) {
+      const [a, b, c] = line;
+      if (boardArr[a] && boardArr[a] === boardArr[b] && boardArr[a] === boardArr[c]) return boardArr[a];
+    }
+    return null;
+  }
+
+  function emptyCellsOf(boardArr) {
+    const out = [];
+    for (let i = 0; i < 9; i++) if (boardArr[i] === null) out.push(i);
+    return out;
+  }
+
+  // Heuristic used once the search runs out of depth: rewards lines the
+  // AI partially owns (and the opponent doesn't), penalizes the reverse.
+  function evaluateState(state) {
+    let score = 0;
+    for (const line of WIN_LINES) {
+      const vals = line.map(i => state.board[i]);
+      const aiCount = vals.filter(v => v === AI_PLAYER).length;
+      const oppCount = vals.filter(v => v === 'X').length;
+      if (aiCount > 0 && oppCount === 0) score += aiCount * aiCount;
+      else if (oppCount > 0 && aiCount === 0) score -= oppCount * oppCount;
+    }
+    return score;
+  }
+
+  // Minimax with alpha-beta pruning. Scores near-term wins/losses higher
+  // than distant ones so the AI prefers the fastest win / slowest loss.
+  function minimax(state, playerToMove, depth, alpha, beta) {
+    const winner = getWinnerOf(state.board);
+    if (winner === AI_PLAYER) return { score: 1000 + depth };
+    if (winner && winner !== AI_PLAYER) return { score: -1000 - depth };
+    if (depth === 0) return { score: evaluateState(state) };
+
+    const moves = emptyCellsOf(state.board);
+    let bestMove = moves[0];
+
+    if (playerToMove === AI_PLAYER) {
+      let best = -Infinity;
+      for (const m of moves) {
+        const nextState = applyMoveToState(state, playerToMove, m);
+        const result = minimax(nextState, 'X', depth - 1, alpha, beta);
+        if (result.score > best) { best = result.score; bestMove = m; }
+        alpha = Math.max(alpha, best);
+        if (beta <= alpha) break;
+      }
+      return { score: best, move: bestMove };
+    } else {
+      let best = Infinity;
+      for (const m of moves) {
+        const nextState = applyMoveToState(state, playerToMove, m);
+        const result = minimax(nextState, AI_PLAYER, depth - 1, alpha, beta);
+        if (result.score < best) { best = result.score; bestMove = m; }
+        beta = Math.min(beta, best);
+        if (beta <= alpha) break;
+      }
+      return { score: best, move: bestMove };
+    }
+  }
+
+  function aiMove() {
+    if (gameOver || current !== AI_PLAYER) return;
+    const state = { board: board.slice(), queues: { X: queues.X.slice(), O: queues.O.slice() } };
+    const result = minimax(state, AI_PLAYER, AI_SEARCH_DEPTH, -Infinity, Infinity);
+    let choice = result.move;
+    if (choice === undefined || choice === null || board[choice] !== null) {
+      const opts = emptyCellsOf(board);
+      choice = opts[Math.floor(Math.random() * opts.length)];
+    }
+    makeMove(choice);
   }
 
   function render() {
@@ -521,7 +631,11 @@
   }
 
   function updateStatus() {
-    statusEl.textContent = (current === 'X' ? "Neon Blue's" : "Neon Green's") + ' turn';
+    if (mode === 'ai' && current === AI_PLAYER) {
+      statusEl.textContent = "AI's turn";
+    } else {
+      statusEl.textContent = (current === 'X' ? "Neon Blue's" : "Neon Green's") + ' turn';
+    }
     statusEl.className = current === 'X' ? 'turn-x' : 'turn-o';
     // re-render to refresh vanish-warning highlight for the new current player
     render();
@@ -531,6 +645,18 @@
     scoreXEl.textContent = scores.X;
     scoreOEl.textContent = scores.O;
   }
+
+  function setMode(newMode) {
+    if (mode === newMode) return;
+    mode = newMode;
+    mode2pBtn.classList.toggle('active', mode === '2p');
+    modeAiBtn.classList.toggle('active', mode === 'ai');
+    resetGame();
+  }
+
+  mode2pBtn.addEventListener('click', () => setMode('2p'));
+  modeAiBtn.addEventListener('click', () => setMode('ai'));
+
 
   function triggerSupernova(player) {
     clearSupernova();
@@ -615,6 +741,7 @@
 
   function resetGame() {
     clearSupernova();
+    clearTimeout(aiTimer);
     board = Array(9).fill(null);
     queues = { X: [], O: [] };
     current = 'X';
